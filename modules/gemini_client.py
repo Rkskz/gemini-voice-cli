@@ -1,36 +1,29 @@
 import os
-from openai import OpenAI
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configuration OpenAI unique
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Configuration Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-def transcribe_audio(file_path):
-    """Transforme l'audio en texte via OpenAI Whisper."""
+def process_voice_command(audio_path):
+    """
+    Envoie l'audio directement à Gemini pour analyse et réponse.
+    C'est gratuit et ça fait STT + LLM en un seul appel !
+    """
     try:
-        with open(file_path, "rb") as audio_file:
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1", 
-                file=audio_file
-            )
-        return transcript.text
+        # 1. Upload du fichier audio vers Google
+        audio_file = genai.upload_file(path=audio_path)
+        
+        # 2. Demander à Gemini d'analyser l'audio
+        response = model.generate_content([
+            "Tu es un assistant domotique vocal. Écoute cet audio et réponds de manière très concise (une phrase courte).",
+            audio_file
+        ])
+        
+        return response.text
     except Exception as e:
-        print(f"[ERROR] Erreur Transcription Whisper : {e}")
-        return None
-
-def get_llm_response(prompt):
-    """Envoie le texte à GPT-4o mini et récupère la réponse."""
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Tu es un assistant domotique vocal. Réponds de façon très concise (une phrase)."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"[ERROR] Erreur GPT-4o mini : {e}")
+        print(f"[ERROR] Erreur Gemini Voice : {e}")
         return None
