@@ -1,0 +1,7 @@
+python-dotenv
+requests
+PyAudio
+SpeechRecognition
+openai
+google-generativeai
+pychromecast
