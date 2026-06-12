@@ -1,34 +1,39 @@
 import os
 from dotenv import load_dotenv
 from modules.audio import record_audio
-from modules.gemini_client import process_voice_command
+from modules.home_assistant import send_audio_to_hass, call_hass_conversation
 
-# Chargement des variables d'environnement
 load_dotenv()
 
 def main():
-    print("=== Gemini Voice Assistant (Chromebook Edition) ===")
+    print("=== Voice-to-HomeAssistant Assistant ===")
     
-    # 1. Enregistrement audio
+    # 1. Enregistrement audio sur le Chromebook
     audio_path = record_audio("command.wav")
     
     if audio_path:
-        print("\n[STEP 2] Analyse en cours via Gemini...")
+        print("\n[STEP 2] Envoi à Home Assistant...")
         
-        # 2. Envoi à Gemini (Analyse audio + Réflexion)
-        reponse = process_voice_command(audio_path)
+        # Option A: Envoyer l'audio pour transcription (si Whisper est configuré sur HA)
+        texte = send_audio_to_hass(audio_path)
         
-        if reponse:
-            print("\n" + "="*30)
-            print(f"ASSISTANT : {reponse}")
-            print("="*30 + "\n")
+        if texte:
+            print(f"HA a compris : {texte}")
+            
+            # Option B: Envoyer le texte au cerveau (Assist/GPT) de HA
+            reponse = call_hass_conversation(texte)
+            
+            if reponse:
+                print("\n" + "="*30)
+                print(f"RÉPONSE HA : {reponse}")
+                print("="*30 + "\n")
         else:
-            print("[ERROR] Gemini n'a pas pu traiter la demande.")
+            print("[ERROR] Home Assistant n'a pas pu transcrire l'audio.")
     else:
         print("[ERROR] Échec de l'enregistrement.")
 
 if __name__ == "__main__":
-    if not os.getenv("GEMINI_API_KEY"):
-        print("[CRITICAL] Erreur : GEMINI_API_KEY non trouvée dans le fichier .env")
+    if not os.getenv("HASS_TOKEN"):
+        print("[CRITICAL] Erreur : HASS_TOKEN non trouvé dans .env")
     else:
         main()
